@@ -4,7 +4,7 @@ import { Sheet } from '../ui/Sheet';
 import { useUi } from '../../state/ui';
 import { useStore } from '../../state/store';
 import { EVENT_TYPES, EVENT_TYPE_ORDER, RECURRENCE_LABELS, RECURRENCE_ORDER } from '../../lib/eventTypes';
-import { addDays, formatDayMonth, toISODate } from '../../lib/dates';
+import { addDays, formatDayMonth, toISODate, fromISODate } from '../../lib/dates';
 
 export function EventSheet() {
   const { eventDraft, updateEvent, closeEvent } = useUi();
@@ -53,14 +53,19 @@ export function EventSheet() {
       )}
       <div style={{ display: 'flex', gap: 14, marginBottom: 4 }}>
         <div className="field" style={{ flex: 1 }}>
-          <label>Día</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button type="button" aria-label="Día anterior" className="icon-btn" style={{ width: 38, height: 38, border: '1.5px solid var(--color-border-strong)' }}
+          <label htmlFor="rumbo-evd">Día</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-surface-2)', borderRadius: 'var(--radius-sm)' }}>
+            <button type="button" aria-label="Día anterior" className="icon-btn" style={{ width: 38, height: 38, flex: 'none' }}
               onClick={() => updateEvent({ date: addDays(date, -1) })}>
               <CaretLeft size={15} weight="bold" />
             </button>
-            <span style={{ flex: 1, textAlign: 'center', fontSize: 14.5, fontWeight: 600 }}>{formatDayMonth(date)}</span>
-            <button type="button" aria-label="Día siguiente" className="icon-btn" style={{ width: 38, height: 38, border: '1.5px solid var(--color-border-strong)' }}
+            <label htmlFor="rumbo-evd" style={{ flex: 1, position: 'relative', textAlign: 'center', fontSize: 14.5, fontWeight: 600, cursor: 'pointer' }}>
+              {formatDayMonth(date)}
+              <input id="rumbo-evd" type="date" value={toISODate(date)}
+                onChange={(e) => { if (e.target.value) updateEvent({ date: fromISODate(e.target.value) }); }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, border: 0, padding: 0, cursor: 'pointer' }} />
+            </label>
+            <button type="button" aria-label="Día siguiente" className="icon-btn" style={{ width: 38, height: 38, flex: 'none' }}
               onClick={() => updateEvent({ date: addDays(date, 1) })}>
               <CaretRight size={15} weight="bold" />
             </button>
