@@ -62,8 +62,46 @@ export function isoWeeksInYear(year) {
   return p(year) === 4 || p(year - 1) === 3 ? 53 : 52;
 }
 
+// The ISO week-numbering year (the year of that week's Thursday) — differs
+// from getFullYear() for the first/last few days of some calendar years.
+export function isoWeekYear(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  return d.getUTCFullYear();
+}
+
+// Human-readable, sortable ISO week key, e.g. "2026-W41".
+export function isoWeekKey(date) {
+  return `${isoWeekYear(date)}-W${String(isoWeekNumber(date)).padStart(2, '0')}`;
+}
+
+const WEEK_EPOCH = new Date(2000, 0, 3); // a Monday
+
+// Absolute, monotonic Monday-aligned week index — stable across year
+// boundaries, used for "every N weeks" interval math (ISO week *numbers*
+// wrap 53→1 and can't be used for modulo directly).
+export function weekIndex(date) {
+  return Math.round((startOfWeek(date) - startOfWeek(WEEK_EPOCH)) / (7 * 86400000));
+}
+
+// Inverse of weekIndex: the Monday of the week at that absolute index.
+export function dateForWeekIndex(idx) {
+  return addDays(startOfWeek(WEEK_EPOCH), idx * 7);
+}
+
+// The Monday of ISO week `week` in ISO week-numbering year `year`.
+export function mondayOfIsoWeek(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  return addDays(startOfWeek(jan4), (week - 1) * 7);
+}
+
 export function daysArrayToMap(arr) {
   return DOW_LETTERS.reduce((acc, l) => { acc[l] = (arr || []).includes(l); return acc; }, {});
+}
+
+export function weekRepeatLabel(every) {
+  return every <= 1 ? 'Cada semana' : `Cada ${every} semanas`;
 }
 
 export function capitalize(s) {

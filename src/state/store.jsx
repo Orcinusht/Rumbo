@@ -3,7 +3,10 @@ import { loadState, saveState } from '../lib/storage';
 import { seedState } from './seed';
 import { makeId } from '../lib/id';
 import { CATEGORIES } from '../lib/categories';
-import { dowLetter, toISODate, addDays, eventOccursOn } from '../lib/dates';
+import {
+  dowLetter, toISODate, addDays, eventOccursOn, weekIndex, isoWeekKey, startOfWeek,
+  mondayOfIsoWeek, isoWeekNumber, isoWeekYear, isoWeeksInYear,
+} from '../lib/dates';
 
 const StoreContext = createContext(null);
 
@@ -13,6 +16,16 @@ function mapGoal(goals, goalId, fn) {
 
 function mapWeekly(goal, weeklyId, fn) {
   return { ...goal, weekly: goal.weekly.map((w) => (w.id === weeklyId ? fn(w) : w)) };
+}
+
+function newWeekly(text, now = new Date()) {
+  return { id: makeId('w'), text, repeat: { every: 1 }, anchorWeek: weekIndex(now), daily: [] };
+}
+
+function omitKey(obj, key) {
+  if (!(key in obj)) return obj;
+  const { [key]: _omit, ...rest } = obj;
+  return rest;
 }
 
 function reducer(state, action) {
@@ -55,31 +68,50 @@ function reducer(state, action) {
     case 'EDIT_GOAL_TITLE':
       return { ...state, goals: mapGoal(state.goals, action.goalId, (g) => ({ ...g, title: action.text })) };
 
-    case 'ADD_WEEKLY':
+    case 'DELETE_GOAL': {
+      const goal = state.goals.find((g) => g.id === action.goalId);
+      if (!goal) return state;
+      const dailyIds = new Set(goal.weekly.flatMap((w) => w.daily.map((d) => d.id)));
+      const weeklyIds = new Set(goal.weekly.map((w) => w.id));
+      const completions = Object.fromEntries(Object.entries(state.completions).filter(([id]) => !dailyIds.has(id)));
+      const weeklyCompletions = Object.fromEntries(Object.entries(state.weeklyCompletions).filter(([id]) => !weeklyIds.has(id)));
       return {
         ...state,
-        goals: mapGoal(state.goals, action.goalId, (g) => ({
-          ...g,
-          weekly: [...g.weekly, { id: makeId('w'), text: action.text, done: false, daily: [] }],
-        })),
+        goals: state.goals.filter((g) => g.id !== action.goalId),
+        completions,
+        weeklyCompletions,
+        looseTasks: state.looseTasks.map((t) => (t.goalId === action.goalId ? { ...t, goalId: null } : t)),
       };
-    case 'EDIT_WEEKLY_TEXT':
+    }
+
+    case 'SAVE_WEEKLY': {
+      const { goalId, weeklyId, mode, text, every } = action;
+      if (mode === 'new') {
+        const w = newWeekly(text);
+        w.repeat = { every: Math.max(1, every || 1) };
+        return { ...state, goals: mapGoal(state.goals, goalId, (g) => ({ ...g, weekly: [...g.weekly, w] })) };
+      }
       return {
         ...state,
-        goals: mapGoal(state.goals, action.goalId, (g) =>
-          mapWeekly(g, action.weeklyId, (w) => ({ ...w, text: action.text }))),
+        goals: mapGoal(state.goals, goalId, (g) =>
+          mapWeekly(g, weeklyId, (w) => ({ ...w, text, repeat: { every: Math.max(1, every || 1) } }))),
       };
+    }
     case 'DELETE_WEEKLY':
       return {
         ...state,
         goals: mapGoal(state.goals, action.goalId, (g) => ({ ...g, weekly: g.weekly.filter((w) => w.id !== action.weeklyId) })),
+        weeklyCompletions: omitKey(state.weeklyCompletions, action.weeklyId),
       };
-    case 'TOGGLE_WEEKLY_DONE':
+    case 'TOGGLE_WEEKLY_OCCURRENCE': {
+      const { weeklyId, weekKey } = action;
+      const forWeekly = state.weeklyCompletions[weeklyId] || {};
+      const prev = forWeekly[weekKey] || { done: false, note: '' };
       return {
         ...state,
-        goals: mapGoal(state.goals, action.goalId, (g) =>
-          mapWeekly(g, action.weeklyId, (w) => ({ ...w, done: !w.done }))),
+        weeklyCompletions: { ...state.weeklyCompletions, [weeklyId]: { ...forWeekly, [weekKey]: { ...prev, done: !prev.done } } },
       };
+    }
 
     case 'ADD_DAILY':
       return {
@@ -104,15 +136,17 @@ function reducer(state, action) {
         ...state,
         goals: mapGoal(state.goals, action.goalId, (g) =>
           mapWeekly(g, action.weeklyId, (w) => ({ ...w, daily: w.daily.filter((d) => d.id !== action.dailyId) }))),
+        completions: omitKey(state.completions, action.dailyId),
       };
 
     case 'CREATE_GOAL': {
       const goalId = makeId('g');
+      const now = new Date();
       const weekly = action.weekly.map((w) => ({
-        id: makeId('w'), text: w.text, done: false,
+        ...newWeekly(w.text, now),
         daily: w.daily.map((d) => ({ id: makeId('d'), text: d.text, days: d.days })),
       }));
-      const goal = { id: goalId, catId: action.catId, title: action.title, target: '', weekly };
+      const goal = { id: goalId, catId: action.catId, title: action.title, target: action.target || '', weekly };
       return { ...state, goals: [...state.goals, goal] };
     }
 
@@ -202,11 +236,61 @@ export function tasksOnDate(state, date) {
   return [...objectivesOnDate(state, date), ...looseTasksOnDate(state, date)];
 }
 
-export function goalWeeklyProgress(goal) {
-  const total = goal.weekly.length;
-  const done = goal.weekly.filter((w) => w.done).length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  return { done, total, pct };
+// Is a weekly objective's recurrence rule "due" on the week containing `date`?
+export function isWeeklyActiveOnDate(weekly, date) {
+  const idx = weekIndex(date);
+  const every = Math.max(1, weekly.repeat?.every || 1);
+  if (idx < weekly.anchorWeek) return false;
+  return (idx - weekly.anchorWeek) % every === 0;
+}
+
+export function weeklyOccurrence(state, weekly, date) {
+  const key = isoWeekKey(startOfWeek(date));
+  return (state.weeklyCompletions[weekly.id] || {})[key] || { done: false, note: '' };
+}
+
+// How many times a weekly objective has been due so far, and how many of
+// those were completed — the real, recurrence-aware basis for goal %.
+export function weeklyHistory(state, weekly, uptoDate = new Date()) {
+  const every = Math.max(1, weekly.repeat?.every || 1);
+  const uptoIdx = weekIndex(uptoDate);
+  if (uptoIdx < weekly.anchorWeek) return { due: 0, done: 0 };
+  const due = Math.floor((uptoIdx - weekly.anchorWeek) / every) + 1;
+  const completions = state.weeklyCompletions[weekly.id] || {};
+  const done = Object.values(completions).filter((c) => c.done).length;
+  return { due, done: Math.min(done, due) };
+}
+
+export function goalWeeklyProgress(state, goal, uptoDate = new Date()) {
+  let due = 0;
+  let done = 0;
+  goal.weekly.forEach((w) => {
+    const h = weeklyHistory(state, w, uptoDate);
+    due += h.due;
+    done += h.done;
+  });
+  const pct = due ? Math.round((done / due) * 100) : 0;
+  return { done, due, pct };
+}
+
+// Per-ISO-week status across a year, for the "year at a glance" grid:
+// 'future' | 'none' (nothing due that week) | 'done' (all due objectives
+// completed) | 'missed' (something was due and wasn't done).
+export function goalYearGrid(state, goal, year, today = new Date()) {
+  const weeks = isoWeeksInYear(year);
+  const todayIdx = weekIndex(today);
+  const out = [];
+  for (let w = 1; w <= weeks; w++) {
+    const monday = mondayOfIsoWeek(year, w);
+    const idx = weekIndex(monday);
+    const isCurrent = isoWeekYear(today) === year && isoWeekNumber(today) === w;
+    if (idx > todayIdx) { out.push({ week: w, status: 'future', isCurrent }); continue; }
+    const active = goal.weekly.filter((wk) => isWeeklyActiveOnDate(wk, monday));
+    if (!active.length) { out.push({ week: w, status: 'none', isCurrent }); continue; }
+    const allDone = active.every((wk) => weeklyOccurrence(state, wk, monday).done);
+    out.push({ week: w, status: allDone ? 'done' : 'missed', isCurrent });
+  }
+  return out;
 }
 
 export function categoryOf(catId) {
@@ -258,4 +342,3 @@ export function computeReminders(state, today, horizonDays = 14) {
   out.sort((a, b) => a.diff - b.diff);
   return out;
 }
-

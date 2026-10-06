@@ -1,4 +1,6 @@
-const KEY = 'rumbo:v1';
+// v2: bumped from v1's recurrence/data-model rework and the move to a blank
+// first-run app — old v1 demo saves should not leak into the fresh start.
+const KEY = 'rumbo:v2';
 
 export function loadState() {
   try {

@@ -6,6 +6,7 @@ const UiContext = createContext(null);
 const emptyWizard = () => ({
   step: 1,
   title: '',
+  target: '',
   catId: 'salud',
   weekly: [], // [{ text, daily: [{ text, days }] }]
   pickIndex: 0,
@@ -55,10 +56,12 @@ export function UiProvider({ children }) {
     updateAdd: (patch) => setAddDraft((d) => ({ ...d, ...patch })),
 
     editor,
-    openEditor: (cfg) => setEditor({ days: {}, ...cfg }),
+    openEditor: (cfg) => setEditor({ days: {}, every: 1, ...cfg }),
     closeEditor: () => setEditor(null),
     updateEditorText: (text) => setEditor((e) => ({ ...e, text })),
     toggleEditorDay: (letter) => setEditor((e) => ({ ...e, days: { ...e.days, [letter]: !e.days[letter] } })),
+    setAllEditorDays: (on) => setEditor((e) => ({ ...e, days: { L: on, M: on, X: on, J: on, V: on, S: on, D: on } })),
+    setEditorEvery: (every) => setEditor((e) => ({ ...e, every })),
 
     eventDraft,
     openNewEvent: (date) => setEventDraft({ mode: 'new', id: null, date, type: 'marcada', title: '', time: '', recurrence: 'once', customLabel: '' }),

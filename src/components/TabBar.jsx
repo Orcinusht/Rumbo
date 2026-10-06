@@ -16,8 +16,8 @@ export function TabBar() {
       {TABS.map(({ key, label, Icon }) => {
         const active = tab === key;
         return (
-          <button key={key} type="button" onClick={() => setTab(key)} style={{ color: active ? 'var(--color-text)' : '#75726f' }}>
-            <Icon size={23} weight="duotone" />
+          <button key={key} type="button" className={active ? 'active' : ''} onClick={() => setTab(key)}>
+            <Icon size={23} weight={active ? 'fill' : 'bold'} />
             <span className="tab-label">{label}</span>
           </button>
         );

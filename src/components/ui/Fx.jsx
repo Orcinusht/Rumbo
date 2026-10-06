@@ -3,7 +3,7 @@ import { useStore } from '../../state/store';
 
 const FxContext = createContext(null);
 
-const INKS = ['#0088b0', '#d6006c', '#edbb00', '#201e1d'];
+const INKS = ['#6c5ce7', '#ff5d7a', '#3e8bff', '#f5a623', '#22c55e', '#14b8a6'];
 
 export function FxProvider({ children }) {
   const { state } = useStore();
@@ -37,7 +37,8 @@ export function FxProvider({ children }) {
       s.style.top = `${y}px`;
       s.style.width = `${w}px`;
       s.style.height = `${h}px`;
-      s.style.background = INKS[i % 4];
+      s.style.background = INKS[i % INKS.length];
+      s.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
       s.style.setProperty('--dx', `${dx}px`);
       s.style.setProperty('--dy', `${dy}px`);
       s.style.setProperty('--r', `${r2}deg`);
@@ -58,9 +59,9 @@ export function FxProvider({ children }) {
       {children}
       {celebration && (
         <div className="celebration-overlay">
-          <div style={{ textAlign: 'center', animation: 'rumbo-in .35s ease both' }}>
-            <div style={{ fontSize: 34, letterSpacing: '-.02em' }}>{celebration}</div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 4 }}>Ya está en el calendario</div>
+          <div style={{ textAlign: 'center', animation: 'rumbo-in .35s cubic-bezier(.2,.8,.25,1) both' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 32, letterSpacing: '-.02em', color: 'var(--color-accent)' }}>{celebration}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-muted)', marginTop: 6 }}>Ya está en el calendario</div>
           </div>
         </div>
       )}

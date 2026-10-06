@@ -40,22 +40,23 @@ export function NoteSheet() {
 
   return (
     <Sheet onClose={closeNote}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <cat.Icon size={15} weight="duotone" color={cat.ink} />
-        <span style={{ fontSize: 9.5, letterSpacing: '.16em', textTransform: 'uppercase', color: cat.ink }}>{cat.label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span className="chip" style={{ background: cat.tint, color: cat.ink }}>
+          <cat.Icon size={13} weight="fill" /> {cat.label}
+        </span>
         <span style={{ flex: 1 }} />
-        <button type="button" onClick={editText} className="btn btn-ghost" style={{ fontSize: 12.5 }}>
-          <PencilSimple size={14} weight="duotone" /> Editar texto
+        <button type="button" onClick={editText} className="btn btn-ghost btn-sm">
+          <PencilSimple size={14} weight="bold" /> Editar
         </button>
       </div>
-      <h3 style={{ fontSize: 22, margin: '0 0 2px', lineHeight: 1.2 }}>{task.title}</h3>
-      {task.goalTitle && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 16px', fontStyle: 'italic' }}>{task.goalTitle}</p>}
+      <h3 className="sheet-title" style={{ marginBottom: 2 }}>{task.title}</h3>
+      {task.goalTitle && <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', margin: '0 0 16px' }}>{task.goalTitle}</p>}
       <div className="field">
         <label htmlFor="rumbo-note">Nota del día</label>
         <textarea id="rumbo-note" className="input" placeholder="¿Cómo ha ido? Dificultades, contexto, lo que quieras recordar."
           value={draft} onChange={(e) => setDraft(e.target.value)} style={{ minHeight: 104, fontSize: 15 }} />
       </div>
-      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+      <div className="sheet-actions">
         <button type="button" onClick={() => { toggle(); closeNote(); }} className="btn btn-secondary" style={{ flex: 1 }}>
           {task.done ? 'Desmarcar' : 'Marcar hecha'}
         </button>
