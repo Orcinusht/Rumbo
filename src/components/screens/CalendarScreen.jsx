@@ -70,7 +70,7 @@ export function CalendarScreen() {
                   <span className="cal-num" style={{ background: isToday ? 'var(--color-accent)' : 'transparent', color: isToday ? '#fff' : 'var(--color-text)' }}>{d.getDate()}</span>
                   <span className="cal-dots">
                     {ob.slice(0, 3).map((o, j) => <span key={j} className="cal-dot" style={{ background: CATEGORIES[o.catId].fill }} />)}
-                    {ev.length > 0 && <span className="cal-diamond" />}
+                    {ev.length > 0 && <span className="cal-diamond" style={{ background: EVENT_TYPES[ev[0].type].fill }} />}
                   </span>
                 </button>
               );
@@ -88,8 +88,8 @@ export function CalendarScreen() {
                   const t = EVENT_TYPES[e.type];
                   return (
                     <div key={e.id} className="list-row">
-                      <span style={{ width: 36, height: 36, borderRadius: 'var(--radius-pill)', background: 'var(--color-accent-tint)', display: 'grid', placeItems: 'center', flex: 'none' }}>
-                        <t.Icon size={17} weight="fill" color="var(--color-accent)" />
+                      <span style={{ width: 36, height: 36, borderRadius: 'var(--radius-pill)', background: t.tint, display: 'grid', placeItems: 'center', flex: 'none' }}>
+                        <t.Icon size={17} weight="fill" color={t.ink} />
                       </span>
                       <button type="button" onClick={() => ui.openEditEvent(e)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3 }}>{e.title}</div>
@@ -156,7 +156,7 @@ function WeekView({ state, calRefDate, selectedDate, setSelectedDate, today, ope
                 const t = EVENT_TYPES[e.type];
                 return (
                   <button key={e.id} type="button" onClick={() => openEditEvent(e)} style={{ display: 'flex', gap: 7, alignItems: 'center', padding: 0, width: '100%', background: 'none', border: 0, cursor: 'pointer', font: 'inherit', textAlign: 'left' }}>
-                    <t.Icon size={14} weight="fill" color="var(--color-accent)" style={{ flex: 'none' }} />
+                    <t.Icon size={14} weight="fill" color={t.ink} style={{ flex: 'none' }} />
                     <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3, flex: 1, minWidth: 0 }}>{e.title}</span>
                     <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>{e.time || 'Todo el día'}</span>
                   </button>

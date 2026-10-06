@@ -38,8 +38,9 @@ export function EventSheet() {
           const t = EVENT_TYPES[k];
           const on = type === k;
           return (
-            <button key={k} type="button" className={`pill-btn${on ? ' on' : ''}`} onClick={() => updateEvent({ type: k })}>
-              <t.Icon size={16} weight={on ? 'fill' : 'bold'} />{t.label}
+            <button key={k} type="button" className={`pill-btn${on ? ' on' : ''}`} onClick={() => updateEvent({ type: k })}
+              style={on ? { borderColor: t.fill, background: t.tint, color: t.ink } : undefined}>
+              <t.Icon size={16} weight={on ? 'fill' : 'bold'} color={on ? t.ink : undefined} />{t.label}
             </button>
           );
         })}

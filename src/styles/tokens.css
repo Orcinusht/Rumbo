@@ -35,6 +35,11 @@
   --cat-finanzas-fill: #f5a623; --cat-finanzas-ink: #b5760a; --cat-finanzas-tint: #fef3e1;
   --cat-personal-fill: #22c55e; --cat-personal-ink: #148a44; --cat-personal-tint: #e6f9ed;
 
+  /* Event-type palette — cumpleaños=amarillo, examen=rojo, el resto=azul. */
+  --evt-cumple-fill: #f6c000;  --evt-cumple-ink: #8a6400;  --evt-cumple-tint: #fff6d9;
+  --evt-examen-fill: #e5484d;  --evt-examen-ink: #a8282d;  --evt-examen-tint: #fdeceb;
+  --evt-otro-fill: #3e8bff;    --evt-otro-ink: #1c5fd6;    --evt-otro-tint: #e8f1ff;
+
   --font-heading: "Outfit", system-ui, sans-serif;
   --font-heading-weight: 700;
   --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
