@@ -18,6 +18,7 @@ export function UiProvider({ children }) {
   const [tab, setTabRaw] = useState('hoy');
   const [openGoalId, setOpenGoalId] = useState(null);
   const [openWeeklyId, setOpenWeeklyId] = useState(null);
+  const [hoyMode, setHoyMode] = useState('dia');
 
   const [calMode, setCalMode] = useState('mes');
   const today = fromISODate(todayISO());
@@ -41,6 +42,9 @@ export function UiProvider({ children }) {
     tab, setTab,
     openGoalId, openGoal: (id) => { setOpenGoalId(id); setOpenWeeklyId(null); }, closeGoal: () => setOpenGoalId(null),
     openWeeklyId, openWeekly: (id) => setOpenWeeklyId(id), closeWeekly: () => setOpenWeeklyId(null),
+    goToWeekly: (goalId, weeklyId) => { setTabRaw('metas'); setOpenGoalId(goalId); setOpenWeeklyId(weeklyId); },
+
+    hoyMode, setHoyMode,
 
     calMode, setCalMode,
     calRefDate, setCalRefDate,

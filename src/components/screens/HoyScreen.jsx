@@ -1,13 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Bell, Plus, NotePencil, SunHorizon } from '@phosphor-icons/react';
-import { useStore, tasksOnDate, computeReminders } from '../../state/store';
+import { Bell, Plus, NotePencil, SunHorizon, CalendarCheck } from '@phosphor-icons/react';
+import {
+  useStore, tasksOnDate, computeReminders, isWeeklyActiveOnDate, weeklyOccurrence,
+} from '../../state/store';
 import { useUi } from '../../state/ui';
 import { useFx } from '../ui/Fx';
 import { CheckBox } from '../ui/CheckBox';
 import { ProgressRing } from '../ui/ProgressRing';
 import { CATEGORIES, CATEGORY_ORDER } from '../../lib/categories';
 import { EVENT_TYPES } from '../../lib/eventTypes';
-import { formatLongDate, isoWeekNumber, todayISO } from '../../lib/dates';
+import {
+  formatLongDate, isoWeekNumber, todayISO, isoWeekKey, startOfWeek, weekRepeatLabel,
+} from '../../lib/dates';
 
 function useReminders(state, today) {
   const all = computeReminders(state, today);
@@ -56,13 +60,14 @@ export function HoyScreen() {
   };
 
   const variant = state.settings.hoyVariant || 'a';
+  const isDia = ui.hoyMode !== 'semana';
 
   return (
     <div className="screen">
       <div className="page-head">
         <div>
           <div className="kicker">{formatLongDate(today)} · Semana {isoWeekNumber(today)}</div>
-          <h1>Hoy</h1>
+          <h1>{isDia ? 'Hoy' : 'Esta semana'}</h1>
         </div>
         <button type="button" aria-label="Avisos" className="icon-btn bell-btn" style={{ width: 44, height: 44 }} onClick={ui.openReminders}>
           <Bell size={22} weight={hasReminder ? 'fill' : 'bold'} color={hasReminder ? 'var(--color-accent)' : 'var(--color-text)'} />
@@ -70,7 +75,12 @@ export function HoyScreen() {
         </button>
       </div>
 
-      {hasReminder && nextRem && (
+      <div className="pill-row" style={{ flexWrap: 'nowrap', marginBottom: 18 }}>
+        <button type="button" className={`pill-btn${isDia ? ' on' : ''}`} onClick={() => ui.setHoyMode('dia')} style={{ flex: 1, justifyContent: 'center' }}>Día</button>
+        <button type="button" className={`pill-btn${!isDia ? ' on' : ''}`} onClick={() => ui.setHoyMode('semana')} style={{ flex: 1, justifyContent: 'center' }}>Semana</button>
+      </div>
+
+      {isDia && hasReminder && nextRem && (
         <button type="button" onClick={ui.openReminders} className="card"
           style={{ display: 'flex', width: '100%', gap: 12, alignItems: 'center', textAlign: 'left', marginBottom: 18, cursor: 'pointer', font: 'inherit' }}>
           <span style={{ width: 40, height: 40, borderRadius: 'var(--radius-pill)', background: 'var(--color-accent-tint)', display: 'grid', placeItems: 'center', flex: 'none' }}>
@@ -84,27 +94,106 @@ export function HoyScreen() {
         </button>
       )}
 
-      {total === 0 ? (
-        <EmptyHoy ui={ui} />
+      {isDia ? (
+        total === 0 ? (
+          <EmptyHoy ui={ui} />
+        ) : (
+          <>
+            {variant === 'a' && <VariantIndice tasks={visible} doneCount={doneCount} total={total} dayPct={dayPct} toggle={toggle} openTask={openTask} />}
+            {variant === 'b' && <VariantPortada tasks={visible} doneCount={doneCount} total={total} dayPct={dayPct} toggle={toggle} openTask={openTask} />}
+            {variant === 'c' && <VariantFichas tasks={visible} doneCount={doneCount} total={total} toggle={toggle} openTask={openTask} />}
+
+            {allDone && (
+              <div className="card" style={{ marginTop: 6, marginBottom: 16, textAlign: 'center', background: 'var(--color-accent-tint)', border: 'none' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 19, color: 'var(--color-accent-700)' }}>Día completo 🎉</div>
+                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>Todo lo de hoy, cerrado. Mañana sigue.</div>
+              </div>
+            )}
+
+            <button type="button" onClick={ui.openAdd} className="add-row">
+              <Plus size={17} weight="bold" /> Añadir objetivo al día
+            </button>
+          </>
+        )
       ) : (
-        <>
-          {variant === 'a' && <VariantIndice tasks={visible} doneCount={doneCount} total={total} dayPct={dayPct} toggle={toggle} openTask={openTask} />}
-          {variant === 'b' && <VariantPortada tasks={visible} doneCount={doneCount} total={total} dayPct={dayPct} toggle={toggle} openTask={openTask} />}
-          {variant === 'c' && <VariantFichas tasks={visible} doneCount={doneCount} total={total} toggle={toggle} openTask={openTask} />}
-
-          {allDone && (
-            <div className="card" style={{ marginTop: 6, marginBottom: 16, textAlign: 'center', background: 'var(--color-accent-tint)', border: 'none' }}>
-              <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 19, color: 'var(--color-accent-700)' }}>Día completo 🎉</div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>Todo lo de hoy, cerrado. Mañana sigue.</div>
-            </div>
-          )}
-
-          <button type="button" onClick={ui.openAdd} className="add-row">
-            <Plus size={17} weight="bold" /> Añadir objetivo al día
-          </button>
-        </>
+        <WeekOverview state={state} dispatch={dispatch} today={today} ui={ui} />
       )}
     </div>
+  );
+}
+
+function WeekOverview({ state, dispatch, today, ui }) {
+  const weekKey = isoWeekKey(startOfWeek(today));
+  const items = state.goals.flatMap((g) => g.weekly
+    .filter((w) => isWeeklyActiveOnDate(w, today))
+    .map((w) => ({ goal: g, weekly: w, occ: weeklyOccurrence(state, w, today) })));
+
+  const doneCount = items.filter((x) => x.occ.done).length;
+  const total = items.length;
+  const weekPct = total ? Math.round((doneCount / total) * 100) : 0;
+
+  const groups = CATEGORY_ORDER.map((k) => {
+    const list = items.filter((x) => x.goal.catId === k);
+    if (!list.length) return null;
+    const c = CATEGORIES[k];
+    const d = list.filter((x) => x.occ.done).length;
+    return { key: k, c, list, count: `${d}/${list.length}` };
+  }).filter(Boolean);
+
+  const toggleWeekly = (x) => dispatch({ type: 'TOGGLE_WEEKLY_OCCURRENCE', weeklyId: x.weekly.id, weekKey });
+
+  if (!total) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon"><CalendarCheck size={32} weight="fill" /></div>
+        <h3>Nada semanal esta semana</h3>
+        <p>Los objetivos semanales de tus metas aparecerán aquí las semanas que toquen.</p>
+        <button type="button" className="btn btn-primary" onClick={() => { ui.setTab('metas'); ui.openWizard(); }}>
+          <Plus size={16} weight="bold" /> Nueva meta
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
+        <ProgressRing pct={weekPct} size={62} stroke={7} fill="var(--color-accent)">
+          <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16 }}>{weekPct}%</span>
+        </ProgressRing>
+        <div>
+          <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 18 }}>{doneCount} de {total} esta semana</div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>{total - doneCount > 0 ? `${total - doneCount} por cerrar` : '¡Semana completa!'}</div>
+        </div>
+      </div>
+      {groups.map(({ key, c, list, count }) => (
+        <div key={key} style={{ marginBottom: 20 }}>
+          <div className="section-head">
+            <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <c.Icon size={16} weight="fill" color={c.ink} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: c.ink }}>{c.label}</span>
+            </span>
+            <span className="count">{count}</span>
+          </div>
+          {list.map((x) => (
+            <div key={x.weekly.id} className={`task-card${x.occ.done ? ' done' : ''}`}>
+              <span className="accent-bar" style={{ background: c.fill }} />
+              <div className="list-row" style={{ flex: 1, padding: '11px 13px' }}>
+                <CheckBox done={x.occ.done} fill={c.fill} onToggle={() => toggleWeekly(x)} size={26} hitSize={44} />
+                <button type="button" onClick={() => ui.goToWeekly(x.goal.id, x.weekly.id)} style={{ flex: 1, textAlign: 'left', background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', minWidth: 0 }}>
+                  <div className={`task-title${x.occ.done ? ' done' : ''}`}>{x.weekly.text}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                    <span className="task-meta">{x.goal.title}</span>
+                    <span style={{ color: 'var(--color-text-faint)' }}>·</span>
+                    <span className="task-meta">{weekRepeatLabel(x.weekly.repeat?.every || 1)}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
   );
 }
 
