@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, PencilSimple, CaretRight, Plus, Check } from '@phosphor-icons/react';
+import { ArrowLeft, PencilSimple, CaretRight, Plus, Check, Sparkle } from '@phosphor-icons/react';
 import {
   useStore, goalWeeklyProgress, weeklyOccurrence, isWeeklyActiveOnDate, goalYearGrid,
 } from '../../state/store';
@@ -31,6 +31,12 @@ export function GoalDetailScreen() {
     if (!isWeeklyActiveOnDate(w, today)) return;
     dispatch({ type: 'TOGGLE_WEEKLY_OCCURRENCE', weeklyId: w.id, weekKey: isoWeekKey(startOfWeek(today)) });
   };
+
+  const suggestWeekly = () => ui.openSuggest({
+    kind: 'weekly', goalTitle: goal.title, goalTarget: goal.target, catLabel: c.label,
+    existing: goal.weekly.map((w) => w.text),
+    onAdd: (texts) => texts.forEach((text) => dispatch({ type: 'SAVE_WEEKLY', goalId: goal.id, mode: 'new', text, every: 1 })),
+  });
 
   return (
     <div className="screen">
@@ -116,9 +122,14 @@ export function GoalDetailScreen() {
           })}
           {!goal.weekly.length && <p style={{ fontSize: 14, color: 'var(--color-text-faint)', padding: '6px 2px' }}>Todavía no hay objetivos semanales.</p>}
         </div>
-        <button type="button" onClick={() => ui.openEditor({ kind: 'weekly', mode: 'new', goalId: goal.id, text: '', every: 1 })} className="add-row">
-          <Plus size={17} weight="bold" /> Añadir objetivo semanal
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => ui.openEditor({ kind: 'weekly', mode: 'new', goalId: goal.id, text: '', every: 1 })} className="add-row" style={{ flex: 1 }}>
+            <Plus size={17} weight="bold" /> Añadir
+          </button>
+          <button type="button" onClick={suggestWeekly} className="add-row" style={{ flex: 1, borderStyle: 'solid', color: 'var(--color-accent)' }}>
+            <Sparkle size={16} weight="fill" /> Sugerir con IA
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--color-text-faint)', margin: '16px 2px 0' }}>Cada objetivo semanal puede tener sus propios objetivos diarios — entra en uno para verlos o añadir más.</p>
     </div>

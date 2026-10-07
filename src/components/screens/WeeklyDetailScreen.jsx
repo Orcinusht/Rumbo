@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, PencilSimple, Plus, Check } from '@phosphor-icons/react';
+import { ArrowLeft, PencilSimple, Plus, Check, Sparkle } from '@phosphor-icons/react';
 import { useStore, weeklyOccurrence, isWeeklyActiveOnDate } from '../../state/store';
 import { useUi } from '../../state/ui';
 import { CATEGORIES } from '../../lib/categories';
@@ -26,6 +26,14 @@ export function WeeklyDetailScreen() {
     if (!active) return;
     dispatch({ type: 'TOGGLE_WEEKLY_OCCURRENCE', weeklyId: weekly.id, weekKey: isoWeekKey(startOfWeek(today)) });
   };
+
+  const suggestDaily = () => ui.openSuggest({
+    kind: 'daily', goalTitle: goal.title, weeklyText: weekly.text,
+    existing: weekly.daily.map((d) => d.text),
+    onAdd: (texts) => texts.forEach((text) => dispatch({
+      type: 'ADD_DAILY', goalId: goal.id, weeklyId: weekly.id, text, days: ['L', 'M', 'X', 'J', 'V'],
+    })),
+  });
 
   return (
     <div className="screen">
@@ -76,9 +84,14 @@ export function WeeklyDetailScreen() {
           ))}
           {!weekly.daily.length && <p style={{ fontSize: 14, color: 'var(--color-text-faint)', padding: '6px 2px' }}>Todavía no hay objetivos diarios en este semanal.</p>}
         </div>
-        <button type="button" onClick={() => ui.openEditor({ kind: 'daily', mode: 'new', goalId: goal.id, weeklyId: weekly.id, text: '', days: { L: true, M: true, X: true, J: true, V: true, S: false, D: false } })} className="add-row">
-          <Plus size={17} weight="bold" /> Añadir objetivo diario
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={() => ui.openEditor({ kind: 'daily', mode: 'new', goalId: goal.id, weeklyId: weekly.id, text: '', days: { L: true, M: true, X: true, J: true, V: true, S: false, D: false } })} className="add-row" style={{ flex: 1 }}>
+            <Plus size={17} weight="bold" /> Añadir
+          </button>
+          <button type="button" onClick={suggestDaily} className="add-row" style={{ flex: 1, borderStyle: 'solid', color: 'var(--color-accent)' }}>
+            <Sparkle size={16} weight="fill" /> Sugerir con IA
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--color-text-faint)', margin: '16px 2px 0' }}>Los diarios de este semanal aparecen solos en el calendario y en Hoy, los días marcados.</p>
     </div>

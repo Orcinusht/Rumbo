@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle, MinusCircle } from '@phosphor-icons/react';
+import { X, CheckCircle, MinusCircle, Sparkle } from '@phosphor-icons/react';
 import { FullSheet } from '../ui/Sheet';
 import { useUi } from '../../state/ui';
 import { useStore } from '../../state/store';
@@ -10,7 +10,7 @@ import { DOW_LETTERS } from '../../lib/dates';
 const STEPS = [[1, 'Título'], [2, 'Semanales'], [3, 'Diarios']];
 
 export function GoalWizard() {
-  const { wizard, updateWizard, setWizardStep, closeWizard } = useUi();
+  const { wizard, updateWizard, setWizardStep, closeWizard, openSuggest } = useUi();
   const { dispatch } = useStore();
   const fx = useFx();
   const { step, title, target, catId, weekly, pickIndex, input, days } = wizard;
@@ -34,6 +34,25 @@ export function GoalWizard() {
   const removeWeekly = (i) => updateWizard({ weekly: weekly.filter((_, j) => j !== i) });
   const removeDaily = (wi, di) => updateWizard({ weekly: weekly.map((w, i) => (i === wi ? { ...w, daily: w.daily.filter((_, j) => j !== di) } : w)) });
   const toggleDay = (l) => updateWizard({ days: { ...days, [l]: !days[l] } });
+
+  const suggestWeekly = () => openSuggest({
+    kind: 'weekly', goalTitle: title || 'esta meta', goalTarget: target, catLabel: cat.label,
+    existing: weekly.map((w) => w.text),
+    onAdd: (texts) => updateWizard({ weekly: [...weekly, ...texts.map((text) => ({ text, daily: [] }))] }),
+  });
+  const suggestDaily = () => {
+    if (!weekly.length) return;
+    const w = weekly[pickIndex];
+    openSuggest({
+      kind: 'daily', goalTitle: title || 'esta meta', weeklyText: w.text,
+      existing: w.daily.map((d) => d.text),
+      onAdd: (texts) => {
+        const selected = DOW_LETTERS.filter((l) => days[l]);
+        const finalDays = selected.length ? selected : ['L', 'M', 'X', 'J', 'V'];
+        updateWizard({ weekly: weekly.map((ww, i) => (i === pickIndex ? { ...ww, daily: [...ww.daily, ...texts.map((text) => ({ text, days: finalDays }))] } : ww)) });
+      },
+    });
+  };
 
   const back = () => (step === 1 ? closeWizard() : setWizardStep(step - 1));
   const next = () => {
@@ -113,11 +132,14 @@ export function GoalWizard() {
                 ))}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
               <input className="input" placeholder="Nuevo objetivo semanal" value={input} onChange={(e) => updateWizard({ input: e.target.value })} onKeyDown={onKey}
                 style={{ flex: 1, minWidth: 0, fontSize: 15, minHeight: 42 }} autoFocus />
               <button type="button" onClick={addAtStep} className="btn btn-secondary" style={{ flex: 'none' }}>Añadir</button>
             </div>
+            <button type="button" onClick={suggestWeekly} className="add-row">
+              <Sparkle size={16} weight="fill" /> Sugerir con IA
+            </button>
           </>
         )}
 
@@ -159,11 +181,14 @@ export function GoalWizard() {
                     );
                   })}
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                   <input className="input" placeholder={`Diario para «${weekly[Math.min(pickIndex, weekly.length - 1)].text}»`} value={input}
                     onChange={(e) => updateWizard({ input: e.target.value })} onKeyDown={onKey} style={{ flex: 1, minWidth: 0, fontSize: 15, minHeight: 42 }} />
                   <button type="button" onClick={addAtStep} className="btn btn-secondary" style={{ flex: 'none' }}>Añadir</button>
                 </div>
+                <button type="button" onClick={suggestDaily} className="add-row">
+                  <Sparkle size={16} weight="fill" /> Sugerir con IA
+                </button>
               </div>
             )}
           </>

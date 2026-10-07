@@ -14,6 +14,8 @@ import { AddTaskSheet } from './components/sheets/AddTaskSheet';
 import { EditorSheet } from './components/sheets/EditorSheet';
 import { EventSheet } from './components/sheets/EventSheet';
 import { RemindersSheet } from './components/sheets/RemindersSheet';
+import { SuggestSheet } from './components/sheets/SuggestSheet';
+import { PlannerSheet } from './components/sheets/PlannerSheet';
 import { GoalWizard } from './components/wizard/GoalWizard';
 
 function Screens() {
@@ -29,7 +31,7 @@ function Screens() {
 }
 
 function Overlays() {
-  const { noteRef, addDraft, editor, eventDraft, remindersOpen, wizard } = useUi();
+  const { noteRef, addDraft, editor, eventDraft, remindersOpen, wizard, suggestDraft, plannerOpen } = useUi();
   return (
     <>
       {noteRef && <NoteSheet />}
@@ -38,6 +40,8 @@ function Overlays() {
       {eventDraft && <EventSheet />}
       {remindersOpen && <RemindersSheet />}
       {wizard && <GoalWizard />}
+      {suggestDraft && <SuggestSheet />}
+      {plannerOpen && <PlannerSheet />}
     </>
   );
 }

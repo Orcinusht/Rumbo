@@ -31,6 +31,8 @@ export function UiProvider({ children }) {
   const [eventDraft, setEventDraft] = useState(null);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [wizard, setWizard] = useState(null);
+  const [suggestDraft, setSuggestDraft] = useState(null);
+  const [plannerOpen, setPlannerOpen] = useState(false);
 
   const setTab = (t) => {
     setTabRaw(t);
@@ -80,6 +82,10 @@ export function UiProvider({ children }) {
     closeWizard: () => setWizard(null),
     setWizardStep: (step) => setWizard((w) => ({ ...w, step, input: '' })),
     updateWizard: (patch) => setWizard((w) => ({ ...w, ...patch })),
+
+    suggestDraft, openSuggest: (cfg) => setSuggestDraft(cfg), closeSuggest: () => setSuggestDraft(null),
+
+    plannerOpen, openPlanner: () => setPlannerOpen(true), closePlanner: () => setPlannerOpen(false),
   };
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
