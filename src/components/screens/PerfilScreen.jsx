@@ -142,7 +142,7 @@ function AiSettings({ ui }) {
   const connected = !!getApiKey();
 
   const save = () => {
-    setApiKey(draft.trim());
+    setApiKey(draft.replace(/\s+/g, ''));
     setSavedPing(true);
     setTimeout(() => setSavedPing(false), 1600);
   };
@@ -162,7 +162,8 @@ function AiSettings({ ui }) {
         <div className="field" style={{ marginBottom: 10 }}>
           <div style={{ position: 'relative' }}>
             <input className="input" type={reveal ? 'text' : 'password'} placeholder="sk-ant-…" value={draft}
-              onChange={(e) => setDraft(e.target.value)} style={{ paddingRight: 42, fontSize: 14 }} autoComplete="off" />
+              onChange={(e) => setDraft(e.target.value)} style={{ paddingRight: 42, fontSize: 14 }}
+              autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck="false" />
             <button type="button" aria-label={reveal ? 'Ocultar' : 'Mostrar'} className="icon-btn" style={{ position: 'absolute', right: 2, top: 2, width: 34, height: 34 }}
               onClick={() => setReveal((r) => !r)}>
               {reveal ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
