@@ -4,7 +4,7 @@ import { seedState } from './seed';
 import { makeId } from '../lib/id';
 import { CATEGORIES } from '../lib/categories';
 import {
-  dowLetter, toISODate, addDays, eventOccursOn, weekIndex, isoWeekKey, startOfWeek,
+  dowLetter, toISODate, todayISO, addDays, eventOccursOn, weekIndex, isoWeekKey, startOfWeek,
   mondayOfIsoWeek, isoWeekNumber, isoWeekYear, isoWeeksInYear,
 } from '../lib/dates';
 
@@ -160,15 +160,95 @@ function reducer(state, action) {
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.patch } };
 
+    case 'ADD_NOTE_PERMANENT': {
+      const text = (action.text || '').trim();
+      if (!text) return state;
+      const note = { id: makeId('np'), text, createdAt: Date.now() };
+      return { ...state, notes: { ...state.notes, permanent: [note, ...state.notes.permanent] } };
+    }
+    case 'EDIT_NOTE_PERMANENT':
+      return {
+        ...state,
+        notes: { ...state.notes, permanent: state.notes.permanent.map((n) => (n.id === action.id ? { ...n, text: action.text } : n)) },
+      };
+    case 'DELETE_NOTE_PERMANENT':
+      return { ...state, notes: { ...state.notes, permanent: state.notes.permanent.filter((n) => n.id !== action.id) } };
+
+    case 'ADD_NOTE_TEMPORAL': {
+      const text = (action.text || '').trim();
+      if (!text) return state;
+      const now = new Date();
+      const scopeKey = action.scope === 'week' ? weekIndex(now) : todayISO();
+      const note = { id: makeId('nt'), text, scope: action.scope, scopeKey, createdAt: Date.now() };
+      return { ...state, notes: { ...state.notes, temporal: [note, ...state.notes.temporal] } };
+    }
+    case 'EDIT_NOTE_TEMPORAL':
+      return {
+        ...state,
+        notes: { ...state.notes, temporal: state.notes.temporal.map((n) => (n.id === action.id ? { ...n, text: action.text } : n)) },
+      };
+    case 'DELETE_NOTE_TEMPORAL':
+      return { ...state, notes: { ...state.notes, temporal: state.notes.temporal.filter((n) => n.id !== action.id) } };
+
+    case 'ADD_SHOPPING_ITEM': {
+      const name = (action.name || '').trim();
+      if (!name) return state;
+      const qty = (action.qty || '').trim();
+      const key = name.toLowerCase();
+      const item = { id: makeId('sh'), name, qty, done: false, createdAt: Date.now() };
+      const prevCount = (state.shopping.frequent[key] || { count: 0 }).count;
+      return {
+        ...state,
+        shopping: {
+          ...state.shopping,
+          items: [...state.shopping.items, item],
+          frequent: { ...state.shopping.frequent, [key]: { label: name, count: prevCount + 1 } },
+        },
+      };
+    }
+    case 'TOGGLE_SHOPPING_ITEM':
+      return {
+        ...state,
+        shopping: { ...state.shopping, items: state.shopping.items.map((it) => (it.id === action.id ? { ...it, done: !it.done } : it)) },
+      };
+    case 'EDIT_SHOPPING_ITEM':
+      return {
+        ...state,
+        shopping: {
+          ...state.shopping,
+          items: state.shopping.items.map((it) => (it.id === action.id ? { ...it, name: action.name, qty: action.qty } : it)),
+        },
+      };
+    case 'DELETE_SHOPPING_ITEM':
+      return { ...state, shopping: { ...state.shopping, items: state.shopping.items.filter((it) => it.id !== action.id) } };
+    case 'CLEAR_SHOPPING_DONE':
+      return { ...state, shopping: { ...state.shopping, items: state.shopping.items.filter((it) => !it.done) } };
+
     default:
       return state;
   }
 }
 
+// Temporal notes expire with the day/week they were pinned to — dropped on
+// load rather than live at midnight, same tradeoff as the app's other
+// manual-reset-on-reopen choices (see weekly completions).
+function pruneTemporalNotes(notes) {
+  const today = todayISO();
+  const curWeek = weekIndex(new Date());
+  return {
+    ...notes,
+    temporal: notes.temporal.filter((n) => (n.scope === 'week' ? n.scopeKey >= curWeek : n.scopeKey >= today)),
+  };
+}
+
 function init() {
   const loaded = loadState();
-  if (loaded) return loaded;
-  return seedState();
+  const base = loaded || seedState();
+  return {
+    ...base,
+    notes: pruneTemporalNotes(base.notes || { permanent: [], temporal: [] }),
+    shopping: base.shopping || { items: [], frequent: {} },
+  };
 }
 
 export function StoreProvider({ children }) {
@@ -341,4 +421,15 @@ export function computeReminders(state, today, horizonDays = 14) {
   }
   out.sort((a, b) => a.diff - b.diff);
   return out;
+}
+
+// Grocery items bought often, learned from history — offered as one-tap
+// chips, excluding anything already pending in the current list.
+export function topFrequentShoppingItems(state, limit = 6) {
+  const activeKeys = new Set(state.shopping.items.filter((it) => !it.done).map((it) => it.name.toLowerCase()));
+  return Object.entries(state.shopping.frequent)
+    .filter(([key]) => !activeKeys.has(key))
+    .sort((a, b) => b[1].count - a[1].count || a[1].label.localeCompare(b[1].label))
+    .slice(0, limit)
+    .map(([key, v]) => ({ key, label: v.label }));
 }

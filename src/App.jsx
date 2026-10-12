@@ -8,6 +8,7 @@ import { CalendarScreen } from './components/screens/CalendarScreen';
 import { MetasListScreen } from './components/screens/MetasListScreen';
 import { GoalDetailScreen } from './components/screens/GoalDetailScreen';
 import { WeeklyDetailScreen } from './components/screens/WeeklyDetailScreen';
+import { NotesScreen } from './components/screens/NotesScreen';
 import { PerfilScreen } from './components/screens/PerfilScreen';
 import { NoteSheet } from './components/sheets/NoteSheet';
 import { AddTaskSheet } from './components/sheets/AddTaskSheet';
@@ -26,6 +27,7 @@ function Screens() {
     if (openGoalId) return <GoalDetailScreen />;
     return <MetasListScreen />;
   }
+  if (tab === 'notas') return <NotesScreen />;
   if (tab === 'perfil') return <PerfilScreen />;
   return <HoyScreen />;
 }

@@ -7,6 +7,8 @@ export function seedState() {
     looseTasks: [],
     completions: {},
     weeklyCompletions: {},
+    notes: { permanent: [], temporal: [] },
+    shopping: { items: [], frequent: {} },
     settings: { hoyVariant: 'a', showCompleted: true, confetti: true },
   };
 }

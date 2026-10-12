@@ -1,11 +1,12 @@
 import React from 'react';
-import { ListChecks, CalendarBlank, Target, ChartBar } from '@phosphor-icons/react';
+import { ListChecks, CalendarBlank, Target, Notebook, ChartBar } from '@phosphor-icons/react';
 import { useUi } from '../state/ui';
 
 const TABS = [
   { key: 'hoy', label: 'Hoy', Icon: ListChecks },
   { key: 'calendario', label: 'Calendario', Icon: CalendarBlank },
   { key: 'metas', label: 'Metas', Icon: Target },
+  { key: 'notas', label: 'Notas', Icon: Notebook },
   { key: 'perfil', label: 'Progreso', Icon: ChartBar },
 ];
 
