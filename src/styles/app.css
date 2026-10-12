@@ -38,10 +38,11 @@
 .task-card {
   display: flex; align-items: center; gap: 2px; background: var(--color-surface);
   border-radius: var(--radius-md); margin-bottom: 10px; box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border); overflow: hidden; transition: opacity .2s ease;
+  border: 1px solid var(--color-border); overflow: hidden; transition: opacity .2s ease, transform .12s ease;
 }
 .task-card .accent-bar { width: 5px; align-self: stretch; flex: none; }
 .task-card.done { opacity: 0.6; }
+.task-card:active { transform: scale(0.985); }
 .task-title { font-size: 16px; line-height: 1.32; font-weight: 600; }
 .task-title.done { color: var(--color-text-done); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .task-meta { font-size: 12px; color: var(--color-text-muted); font-weight: 500; }
@@ -106,9 +107,10 @@
   display: flex; align-items: center; gap: 8px; color: var(--color-accent); font-weight: 700;
   font-size: 14.5px; background: none; border: 1.5px dashed var(--color-border-strong);
   border-radius: var(--radius-md); padding: 13px 16px; cursor: pointer; width: 100%; margin-top: 4px;
-  transition: border-color .15s ease, background .15s ease;
+  transition: border-color .15s ease, background .15s ease, transform .12s ease;
 }
 .add-row:hover { border-color: var(--color-accent); background: var(--color-accent-tint); }
+.add-row:active { transform: scale(0.98); }
 
 .section-head {
   display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;

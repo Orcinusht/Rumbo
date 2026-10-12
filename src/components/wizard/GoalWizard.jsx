@@ -83,7 +83,7 @@ export function GoalWizard() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: '22px 20px 10px' }}>
+      <div style={{ flex: 1, overflow: 'auto', overscrollBehavior: 'contain', padding: '22px 20px 10px' }}>
         {step === 1 && (
           <>
             <h2 style={{ fontSize: 24, margin: '0 0 16px' }}>¿Qué quieres conseguir este año?</h2>

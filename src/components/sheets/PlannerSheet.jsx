@@ -105,7 +105,7 @@ export function PlannerSheet() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: '0 20px 20px' }}>
+      <div style={{ flex: 1, overflow: 'auto', overscrollBehavior: 'contain', padding: '0 20px 20px' }}>
         {status === 'idle' && (
           <div className="empty-state" style={{ padding: '30px 4px' }}>
             <div className="empty-icon"><Sparkle size={28} weight="fill" /></div>
