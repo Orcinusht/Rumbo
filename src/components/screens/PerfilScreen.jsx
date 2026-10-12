@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Sparkle, CheckCircle, ArrowSquareOut, Eye, EyeSlash } from '@phosphor-icons/react';
+import React, { useRef, useState } from 'react';
+import {
+  Sparkle, CheckCircle, ArrowSquareOut, Eye, EyeSlash, DownloadSimple, UploadSimple, Warning,
+} from '@phosphor-icons/react';
 import { useStore, goalWeeklyProgress, tasksOnDate } from '../../state/store';
 import { useUi } from '../../state/ui';
 import { CATEGORIES, CATEGORY_ORDER } from '../../lib/categories';
 import { ProgressBar } from '../ui/ProgressBar';
 import { getApiKey, setApiKey } from '../../lib/aiKey';
 import {
-  DOW_LETTERS, addDays, startOfWeek, isoWeekNumber, isoWeeksInYear, capitalize,
+  DOW_LETTERS, addDays, startOfWeek, isoWeekNumber, isoWeeksInYear, capitalize, todayISO,
 } from '../../lib/dates';
 
 function sumDoneInRange(state, from, to) {
@@ -61,6 +63,8 @@ export function PerfilScreen() {
       <p style={{ fontSize: 14.5, color: 'var(--color-text-muted)', margin: '0 0 20px' }}>
         Vas por la semana {weekNo} de {totalWeeks} · queda el {pctYear}% del año.
       </p>
+
+      <BackupSettings state={state} dispatch={dispatch} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
         {[[weekDone, 'esta semana'], [monthDone, 'este mes'], [state.goals.length, 'metas activas']].map(([n, l]) => (
@@ -131,6 +135,89 @@ export function PerfilScreen() {
       </div>
 
       <AiSettings ui={ui} />
+    </div>
+  );
+}
+
+function BackupSettings({ state, dispatch }) {
+  const fileRef = useRef(null);
+  const [pending, setPending] = useState(null); // parsed backup waiting for confirmation
+  const [status, setStatus] = useState(null); // { kind: 'ok' | 'error', text }
+
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rumbo-backup-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const onFile = (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed) || !('goals' in parsed)) {
+          throw new Error('not a rumbo backup');
+        }
+        setPending(parsed);
+        setStatus(null);
+      } catch {
+        setStatus({ kind: 'error', text: 'Ese archivo no parece una copia de seguridad de Rumbo.' });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const confirmImport = () => {
+    dispatch({ type: 'IMPORT_STATE', state: pending });
+    setPending(null);
+    setStatus({ kind: 'ok', text: 'Copia restaurada.' });
+  };
+
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <div className="kicker">Copia de seguridad</div>
+      <div className="card">
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 14px' }}>
+          Tus datos viven solo en este dispositivo — si cambias de móvil, reinstalas la app o algo sale mal, se pierden sin avisar. Haz una copia de vez en cuando.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={exportData} style={{ flex: 1 }}>
+            <DownloadSimple size={15} weight="bold" /> Exportar
+          </button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} style={{ flex: 1 }}>
+            <UploadSimple size={15} weight="bold" /> Importar
+          </button>
+        </div>
+        <input ref={fileRef} type="file" accept="application/json" onChange={onFile} style={{ display: 'none' }} />
+        {status && (
+          <p style={{ fontSize: 12.5, fontWeight: 600, margin: '10px 0 0', color: status.kind === 'ok' ? 'var(--cat-personal-ink)' : 'var(--color-danger)' }}>
+            {status.text}
+          </p>
+        )}
+      </div>
+      {pending && (
+        <div className="card" style={{ marginTop: 10, borderColor: 'var(--color-danger)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+            <Warning size={18} weight="fill" color="var(--color-danger)" style={{ flex: 'none', marginTop: 1 }} />
+            <p style={{ fontSize: 13.5, margin: 0, fontWeight: 600 }}>
+              Esto reemplazará todos tus datos actuales ({state.goals.length} metas, {state.events.length} eventos) por los de esta copia. No se puede deshacer.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPending(null)} style={{ flex: 1 }}>Cancelar</button>
+            <button type="button" className="btn btn-danger-solid btn-sm" onClick={confirmImport} style={{ flex: 1 }}>Confirmar, reemplazar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -224,6 +224,12 @@ function reducer(state, action) {
     case 'CLEAR_SHOPPING_DONE':
       return { ...state, shopping: { ...state.shopping, items: state.shopping.items.filter((it) => !it.done) } };
 
+    // Replaces the whole app state with an imported backup. Goes through
+    // the same defaulting as a fresh load so an older or partial backup
+    // file can't crash the app on a field it doesn't have.
+    case 'IMPORT_STATE':
+      return withDefaults(action.state || {});
+
     default:
       return state;
   }
@@ -241,14 +247,26 @@ function pruneTemporalNotes(notes) {
   };
 }
 
-function init() {
-  const loaded = loadState();
-  const base = loaded || seedState();
+// Fills in any field a stored or imported blob is missing — used on every
+// load and on backup import, so neither an older save nor a hand-edited
+// backup file can crash the app on a missing key.
+function withDefaults(base) {
   return {
     ...base,
+    goals: base.goals || [],
+    events: base.events || [],
+    looseTasks: base.looseTasks || [],
+    completions: base.completions || {},
+    weeklyCompletions: base.weeklyCompletions || {},
     notes: pruneTemporalNotes(base.notes || { permanent: [], temporal: [] }),
     shopping: base.shopping || { items: [], frequent: {} },
+    settings: { hoyVariant: 'a', showCompleted: true, confetti: true, ...(base.settings || {}) },
   };
+}
+
+function init() {
+  const loaded = loadState();
+  return withDefaults(loaded || seedState());
 }
 
 export function StoreProvider({ children }) {
