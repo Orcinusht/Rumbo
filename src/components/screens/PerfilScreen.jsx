@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react';
 import {
-  Sparkle, CheckCircle, ArrowSquareOut, Eye, EyeSlash, DownloadSimple, UploadSimple, Warning,
+  Sparkle, CheckCircle, ArrowSquareOut, Eye, EyeSlash, DownloadSimple, UploadSimple, Warning, UserCircle,
 } from '@phosphor-icons/react';
 import { useStore, goalWeeklyProgress, tasksOnDate } from '../../state/store';
 import { useUi } from '../../state/ui';
+import { useAuth } from '../../state/auth';
+import { useSync } from '../../state/sync';
 import { CATEGORIES, CATEGORY_ORDER } from '../../lib/categories';
 import { ProgressBar } from '../ui/ProgressBar';
 import { getApiKey, setApiKey } from '../../lib/aiKey';
@@ -64,6 +66,7 @@ export function PerfilScreen() {
         Vas por la semana {weekNo} de {totalWeeks} · queda el {pctYear}% del año.
       </p>
 
+      <AccountSettings />
       <BackupSettings state={state} dispatch={dispatch} />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 26 }}>
@@ -135,6 +138,80 @@ export function PerfilScreen() {
       </div>
 
       <AiSettings ui={ui} />
+    </div>
+  );
+}
+
+const STATUS_LABEL = { syncing: 'Sincronizando…', synced: 'Sincronizado con la nube', error: 'Error al sincronizar', idle: 'Pendiente de sincronizar' };
+
+function AccountSettings() {
+  const { configured, ready, user, signUp, signIn, signOut } = useAuth();
+  const { status } = useSync();
+  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!configured || !ready) return null;
+
+  if (user) {
+    return (
+      <div style={{ marginBottom: 26 }}>
+        <div className="kicker">Cuenta</div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ width: 38, height: 38, borderRadius: 'var(--radius-pill)', background: 'var(--color-accent-tint)', display: 'grid', placeItems: 'center', flex: 'none' }}>
+            <UserCircle size={20} weight="fill" color="var(--color-accent)" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+            <div style={{ fontSize: 12, color: status === 'error' ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>{STATUS_LABEL[status]}</div>
+          </div>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={signOut} style={{ flex: 'none' }}>Cerrar sesión</button>
+        </div>
+      </div>
+    );
+  }
+
+  const submit = async () => {
+    setError(null);
+    setNotice(null);
+    if (!email.trim() || password.length < 6) {
+      setError('Escribe un email y una contraseña de al menos 6 caracteres.');
+      return;
+    }
+    setBusy(true);
+    const { error: err } = mode === 'signup' ? await signUp(email.trim(), password) : await signIn(email.trim(), password);
+    setBusy(false);
+    if (err) { setError(err.message); return; }
+    if (mode === 'signup') setNotice('Cuenta creada. Si tu proyecto pide confirmar el correo, revisa tu bandeja de entrada.');
+    setPassword('');
+  };
+
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <div className="kicker">Cuenta</div>
+      <div className="card">
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 14px' }}>
+          Crea una cuenta para que tus datos vivan también en la nube — así no se pierden aunque cambies de móvil o borres la app.
+        </p>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
+            style={{ fontSize: 14 }} autoCapitalize="off" autoCorrect="off" />
+        </div>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <input className="input" type="password" placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ fontSize: 14 }} />
+        </div>
+        {error && <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--color-danger)', margin: '0 0 10px' }}>{error}</p>}
+        {notice && <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--cat-personal-ink)', margin: '0 0 10px' }}>{notice}</p>}
+        <button type="button" className="btn btn-primary btn-sm" onClick={submit} disabled={busy} style={{ width: '100%', marginBottom: 10 }}>
+          {busy ? 'Un momento…' : mode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}
+        </button>
+        <button type="button" className="link-btn" onClick={() => { setMode(mode === 'signup' ? 'signin' : 'signup'); setError(null); setNotice(null); }}>
+          {mode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Créala'}
+        </button>
+      </div>
     </div>
   );
 }

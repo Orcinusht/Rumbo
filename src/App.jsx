@@ -1,6 +1,8 @@
 import React from 'react';
 import { StoreProvider } from './state/store';
 import { UiProvider, useUi } from './state/ui';
+import { AuthProvider } from './state/auth';
+import { SyncProvider } from './state/sync';
 import { FxProvider } from './components/ui/Fx';
 import { TabBar } from './components/TabBar';
 import { HoyScreen } from './components/screens/HoyScreen';
@@ -51,17 +53,21 @@ function Overlays() {
 export default function App() {
   return (
     <StoreProvider>
-      <UiProvider>
-        <div className="app-shell">
-          <FxProvider>
-            <div className="app-scroll">
-              <Screens />
+      <AuthProvider>
+        <SyncProvider>
+          <UiProvider>
+            <div className="app-shell">
+              <FxProvider>
+                <div className="app-scroll">
+                  <Screens />
+                </div>
+                <TabBar />
+                <Overlays />
+              </FxProvider>
             </div>
-            <TabBar />
-            <Overlays />
-          </FxProvider>
-        </div>
-      </UiProvider>
+          </UiProvider>
+        </SyncProvider>
+      </AuthProvider>
     </StoreProvider>
   );
 }
